@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"strconv"
+	"slices"
 )
 
 func readInput(inputFile string) (map[int][]int, [][]int) {
@@ -36,36 +37,43 @@ func readInput(inputFile string) (map[int][]int, [][]int) {
 	return rules, updates
 }
 
-func part1() int {
+func checkValid(pageIndex int, update []int, rules map[int][]int) (bool, int) {
+	for p, pageAhead := range update[pageIndex:] {
+		if slices.Contains(rules[update[pageIndex]], pageAhead) {
+			return false, p+pageIndex
+		}
+	}
+	return true, -1
+}
+
+func part1and2() (int, int) {
 	rules, updates := readInput("input.txt")
-	sum := 0
-	for u, update := range updates {
+	oksum, notoksum := 0, 0
+	for _, update := range updates {
 		ok := true
-		for p, page := range update {
-			if !ok { break }
-			for _, pageAhead := range update[p:] {
-				if !ok { break }
-				for _, pageAheadRule := range rules[page] {
-					if pageAhead == pageAheadRule {
-						ok = false
-						break
-					}
-				}
+		for pageIndex := range update {
+			if ok, _ = checkValid(pageIndex, update, rules); !ok {
+				break
 			}
 		}
 		if ok {
-			middle := len(updates[u]) / 2
-			sum += updates[u][middle]
+			oksum += update[len(update)/2]
+		} else {
+			for pageIndex := 0; pageIndex < len(update); {
+				if ok, i := checkValid(pageIndex, update, rules); ok {
+					pageIndex += 1
+				} else {
+					update[pageIndex], update[i] = update[i], update[pageIndex]
+				}
+			}
+			notoksum += update[len(update)/2]
 		}
 	}
-	return sum
-}
-
-func part2() int {
-	return -1
+	return oksum, notoksum
 }
 
 func main() {
-	fmt.Println("Part 1:", part1())
-	fmt.Println("Part 2:", part2())
+	p1, p2 := part1and2()
+	fmt.Println("Part 1:", p1)
+	fmt.Println("Part 2:", p2)
 }
