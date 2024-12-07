@@ -8,57 +8,56 @@ import (
 
 type Position struct {
 	row, col int
-	dir string // ^ V < >
+	dir rune // ^ V < >
 }
 
-func readInput(inputFile string) ([][]string, Position) {
+var directions = map[rune][2]int{
+	'^': {-1, 0},
+	'<': { 0,-1},
+	'V': {+1, 0},
+	'>': { 0,+1},
+}
+
+var turns = map[rune]rune{
+	'^': '>',
+	'<': '^',
+	'V': '<',
+	'>': 'V',
+}
+
+func readInput(inputFile string) ([][]rune, Position) {
 	input, _ := os.ReadFile(inputFile)
-	lines := [][]string{}
+	inputlines := strings.Split(strings.TrimSpace(string(input)), "\n")
+	lines := [][]rune{}
 	guardpos := Position{}
-	for row, line := range strings.Split(strings.TrimSpace(string(input)), "\n") {
-		chars := strings.Split(line, "")
-		lines = append(lines, chars)
-		for col, char := range chars {
-			if char == "^" {
+	for row, line := range inputlines {
+		lines = append(lines, []rune(line))
+		for col, char := range line {
+			if char == '^' {
 				guardpos.row = row
 				guardpos.col = col
-				guardpos.dir = "^"
+				guardpos.dir = '^'
 			}
 		}
 	}
 	return lines, guardpos
 }
 
-func nextmove(g *Position, lines [][]string) bool {
-	block := "#"
+func nextmove(g *Position, lines [][]rune) bool {
 	rows, cols := len(lines), len(lines[0])
 
 	if
-	g.dir == "^" && g.row == 0 ||
-	g.dir == "<" && g.col == 0 ||
-	g.dir == "V" && g.row == rows-1 ||
-	g.dir == ">" && g.col == cols-1  {
+	g.dir == '^' && g.row == 0 ||
+	g.dir == '<' && g.col == 0 ||
+	g.dir == 'V' && g.row == rows-1 ||
+	g.dir == '>' && g.col == cols-1  {
 		return false
-	}
-
-	directions := map[string][2]int{
-		"^": {-1, 0},
-		"<": { 0,-1},
-		"V": {+1, 0},
-		">": { 0,+1},
-	}
-
-	turns := map[string]string{
-		"^": ">",
-		"<": "^",
-		"V": "<",
-		">": "V",
 	}
 
 	for dir, move := range directions {
 		x, y := move[0], move[1]
 		if g.dir == dir {
-			if lines[g.row+1*x][g.col+1*y] == block {
+			for lines[g.row+1*x][g.col+1*y] == '#' {
 				turn := turns[g.dir]
 				move = directions[turn]
 				x, y = move[0], move[1]
@@ -72,23 +71,45 @@ func nextmove(g *Position, lines [][]string) bool {
 	return false
 }
 
-func part1() int {
-	lines, guardpos := readInput("input.txt")
+func runguard(g *Position, lines [][]rune) (map[[2]int]bool, bool) {
 	visited := map[[2]int]bool{}
-	for ok := nextmove(&guardpos, lines); ok; ok = nextmove(&guardpos, lines) {
-		key := [2]int{guardpos.row, guardpos.col}
-		if _, ok := visited[key]; !ok {
-			visited[key] = true
+	visits := map[[3]int]int{}
+	hasloop := false
+	for ok := true; ok && !hasloop; ok = nextmove(g, lines) {
+		key := [3]int{g.row, g.col, int(g.dir)}
+		if visitcount, _ := visits[key]; visitcount > 0 {
+			hasloop = true
+		} else {
+			visits[key] += 1
+			visited[[2]int{g.row, g.col}] = true
 		}
 	}
-	return len(visited)
+	return visited, hasloop
 }
 
-func part2() int {
-	return -1
+func part1and2() (int, int) {
+	lines, gp := readInput("input.txt")
+	visited, _ := runguard(&Position{row: gp.row, col: gp.col, dir: gp.dir}, lines)
+	obstructions := map[[2]int]bool{}
+	for coord := range visited {
+		x, y := coord[0], coord[1]
+		if lines[x][y] != '^' {
+			lines[x][y] = '#'
+			_, hasloop := runguard(&Position{row: gp.row, col: gp.col, dir: gp.dir}, lines)
+			if hasloop {
+				_, seen := obstructions[coord]
+				if !seen {
+					obstructions[coord] = true
+				}
+			}
+			lines[x][y] = '.'
+		}
+	}
+	return len(visited), len(obstructions)
 }
 
 func main() {
-	fmt.Println("Part 1:", part1())
-	fmt.Println("Part 2:", part2())
+	p1, p2 := part1and2()
+	fmt.Println("Part 1:", p1)
+	fmt.Println("Part 2:", p2)
 }
