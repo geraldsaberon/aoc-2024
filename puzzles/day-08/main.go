@@ -33,16 +33,29 @@ func validnode(node position, mapsize [2]int) bool {
 func antinodes(locations []position) []position {
 	nodes := []position{}
 	for _, a := range locations {
-		for _, b := range locations {
-			if a != b && b.x > a.x {
-				dx := b.x - a.x
-				dy := b.y - a.y
-				node1 := position{a.x-dx, a.y-dy}
-				node2 := position{b.x+dx, b.y+dy}
-				nodes = append(nodes, node1, node2)
-			}
+	for _, b := range locations {
+		if a == b || b.x < a.x { continue }
+		dx, dy := b.x - a.x, b.y - a.y
+		node1 := position{a.x-dx, a.y-dy}
+		node2 := position{b.x+dx, b.y+dy}
+		nodes = append(nodes, node1, node2)
+	}}
+	return nodes
+}
+
+func antinodes2(locations []position, mapsize [2]int) []position {
+	nodes := []position{}
+	w, h := mapsize[0], mapsize[1]
+	for _, a := range locations {
+	for _, b := range locations {
+		if a == b || b.x < a.x { continue }
+		dx, dy := b.x - a.x, b.y - a.y
+		for i := 0; dx*i < w && dy*i < h; i++ {
+			node1 := position{a.x-dx*i, a.y-dy*i}
+			node2 := position{b.x+dx*i, b.y+dy*i}
+			nodes = append(nodes, node1, node2)
 		}
-	}
+	}}
 	return nodes
 }
 
@@ -61,7 +74,17 @@ func part1() int {
 }
 
 func part2() int {
-	return -1
+	antennas, mapsize := readinput("input.txt")
+	unique := map[position]bool{}
+	for _, locations := range antennas {
+		nodes := antinodes2(locations, mapsize)
+		for _, node := range nodes {
+			if validnode(node, mapsize) {
+				unique[node] = true
+			}
+		}
+	}
+	return len(unique)
 }
 
 func main() {
