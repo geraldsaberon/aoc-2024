@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"image/png"
+	"image/color"
 	"os"
 	"strconv"
 	"strings"
@@ -67,6 +70,26 @@ func getSafetyFactor(map_ [][]int) int {
 	return safetyFactor
 }
 
+func createMapImage(map_ [][]int, name string) {
+	os.Mkdir("images", 0)
+	fileName := fmt.Sprintf("./images/%v.png", name)
+    img := image.NewGray(image.Rect(0, 0, len(map_[0]), len(map_)))
+    f, err := os.Create(fileName)
+    if err != nil {
+        panic(err)
+    }
+	for y := range map_ {
+		for x, n := range map_[y] {
+			if n == 0 {
+				img.SetGray(x, y, color.Gray{0})
+			} else {
+				img.SetGray(x, y, color.Gray{255})
+			}
+		}
+	}
+    png.Encode(f, img)
+}
+
 func part1() int {
 	config := readInput("input.txt")
 	w, h := 101, 103
@@ -80,6 +103,25 @@ func part1() int {
 	return getSafetyFactor(map_)
 }
 
+func part2() {
+	config := readInput("input.txt")
+	w, h := 101, 103
+	startTime := 7500 // The solution to mine was around 8000
+	endTime := 8500
+	for t := startTime; t < endTime; t++ {
+		map_ := makeMap(w, h)
+		for _, pv := range config {
+			p, v := pv[0], pv[1]
+			pnew := run(p, v, w, h, t)
+			map_[pnew.y][pnew.x] += 1
+		}
+		createMapImage(map_, strconv.Itoa(t))
+		fmt.Printf("Creating map image #%v\r", t)
+	}
+	fmt.Println("Part 2: You have to find the answer yourself inside ./images :)")
+}
+
 func main() {
 	fmt.Println("Part 1:", part1())
+	part2()
 }
