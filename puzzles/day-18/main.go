@@ -10,6 +10,7 @@ import (
 type node struct {
 	pos position
 	prev *node
+	steps int
 }
 
 type position struct {
@@ -50,9 +51,9 @@ func readInput(inputFile string) []position {
 }
 
 func makeMap(w, h int) [][]string {
-	map_ := make([][]string, h+1)
+	map_ := make([][]string, h)
 	for y := range map_ {
-		map_[y] = make([]string, w+1)
+		map_[y] = make([]string, w)
 		for x := range map_[y] {
 			map_[y][x] = "."
 		}
@@ -60,17 +61,8 @@ func makeMap(w, h int) [][]string {
 	return map_
 }
 
-func pathLen(n *node) int {
-	steps := 0
-	for n.prev != nil {
-		n = n.prev
-		steps += 1
-	}
-	return steps - 1
-}
-
 func bfs(start, end position, map_ [][]string) int {
-	queue := []*node{{start, &node{}}}
+	queue := []*node{{start, &node{}, 0}}
 	seen := map[position]bool{}
 	solution := node{}
 	for len(queue) > 0 {
@@ -86,23 +78,38 @@ func bfs(start, end position, map_ [][]string) int {
 		seen[cur.pos] = true
 		for _, a := range cur.pos.adjacents() {
 			if _, visited := seen[a]; !visited && a.isValid(map_) {
-				queue = append(queue, &node{a, cur})
+				queue = append(queue, &node{a, cur, cur.steps+1})
 			}
 		}
 	}
-	return pathLen(&solution)
+	return solution.steps
 }
 
 func part1() int {
 	ps := readInput("input.txt")
-	w, h, max := 70, 70, 1024
+	w, h, max := 71, 71, 1024
 	map_ := makeMap(w, h)
 	for i := 0; i < max; i++ {
 		map_[ps[i].y][ps[i].x] = "#"
 	}
-	return bfs(position{0, 0}, position{w, h}, map_)
+	return bfs(position{0, 0}, position{70, 70}, map_)
+}
+
+func part2() position {
+	ps := readInput("input.txt")
+	w, h, max := 71, 71, len(ps)
+	map_ := makeMap(w, h)
+	for i := 0; i < max; i++ {
+		map_[ps[i].y][ps[i].x] = "#"
+		res := bfs(position{0, 0}, position{70, 70}, map_)
+		if res <= 0 {
+			return ps[i]
+		}
+	}
+	return position{}
 }
 
 func main() {
 	fmt.Println("Part 1:", part1())
+	fmt.Println("Part 2:", part2())
 }
