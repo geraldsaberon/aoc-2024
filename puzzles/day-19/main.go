@@ -28,6 +28,26 @@ func isPossible(design string, towels []string) bool {
 	return false
 }
 
+var cache = map[string]int{}
+
+func combinationCount(design string, towels []string) int {
+	if cached, hit := cache[design]; hit {
+		return cached
+	}
+	if design == "" {
+		return 1
+	}
+	possibleCombinations := 0
+	for _, towel := range towels {
+		if cut, ok := strings.CutPrefix(design, towel); ok {
+			c := combinationCount(cut, towels)
+			cache[cut] = c
+			possibleCombinations += c
+		}
+	}
+	return possibleCombinations
+}
+
 func part1() int {
 	towels, designs := readInput("input.txt")
 	possible := 0
@@ -39,6 +59,16 @@ func part1() int {
 	return possible
 }
 
+func part2() int {
+	towels, designs := readInput("input.txt")
+	possibleCombinations := 0
+	for _, design := range designs {
+		possibleCombinations += combinationCount(design, towels)
+	}
+	return possibleCombinations
+}
+
 func main() {
 	fmt.Println("Part 1:", part1())
+	fmt.Println("Part 2:", part2())
 }
