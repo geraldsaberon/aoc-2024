@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 )
@@ -15,6 +16,12 @@ type position struct {
 	x, y int
 }
 
+func (p position) distance(q position) int {
+	dx := math.Abs(float64(p.x - q.x))
+	dy := math.Abs(float64(p.y - q.y))
+	return int(dx + dy)
+}
+
 func (p position) adjacents() []position {
 	adjs := []position{
 		{p.x, p.y-1},
@@ -25,42 +32,11 @@ func (p position) adjacents() []position {
 	return adjs
 }
 
-func (p position) isInBounds(map_ [][]string) bool {
-	if p.x < 0 || p.y < 0 || p.x > len(map_[0])-1 || p.y > len(map_)-1 {
-		return false
-	}
-	return true
-}
-
-func (p position) isEdge(map_ [][]string) bool {
-	if p.x == 0 || p.y == 0 || p.x == len(map_[0])-1 || p.y == len(map_)-1 {
-		return true
-	}
-	return false
-}
-
-func (p position) isPassable(map_ [][]string) bool {
-	a := p.adjacents()
-	u, d, l, r := a[0], a[1], a[2], a[3]
-	if !l.isInBounds(map_) || !r.isInBounds(map_) || !u.isInBounds(map_) || !d.isInBounds(map_) {
-		return false
-	}
-	if map_[l.y][l.x] == "." && map_[r.y][r.x] == "." {
-		return true
-	}
-	if map_[u.y][u.x] == "." && map_[d.y][d.x] == "." {
-		return true
-	}
-	return false
-}
-
-func readInput(inputFile string) (map_ [][]string, walls []position, start, end position) {
+func readInput(inputFile string) (position, position, [][]string) {
 	input, _ := os.ReadFile(inputFile)
 	lines := strings.Split(strings.TrimSpace(string(input)), "\n")
-	map_ = [][]string{}
-	walls = []position{}
-	start = position{}
-	end = position{}
+	map_ := [][]string{}
+	start, end := position{}, position{}
 	for y, row := range lines {
 		map_ = append(map_, strings.Split(row, ""))
 		for x, tile := range row {
@@ -70,56 +46,58 @@ func readInput(inputFile string) (map_ [][]string, walls []position, start, end 
 			} else if tile == 'E' {
 				end.x, end.y = x, y
 				map_[y][x] = "."
-			} else if tile == '#' {
-				walls = append(walls, position{x, y})
 			}
 		}
 	}
-	return
+	return start, end, map_
 }
 
-func bfs(start, end position, map_ [][]string) int {
+func bfs(start, end position, map_ [][]string) []*node {
 	queue := []*node{{start, 0}}
 	seen := map[position]bool{}
-	solution := node{}
+	path := []*node{}
 	for len(queue) > 0 {
 		cur := queue[0]
 		queue = queue[1:]
+		path = append(path, cur)
 		if cur.pos == end {
-			solution = *cur
 			break
-		}
-		if _, visited := seen[cur.pos]; visited {
-			continue
 		}
 		seen[cur.pos] = true
 		for _, a := range cur.pos.adjacents() {
-			if _, visited := seen[a]; !visited && a.isInBounds(map_) && map_[a.y][a.x] != "#" {
+			if _, visited := seen[a]; !visited && map_[a.y][a.x] != "#" {
 				queue = append(queue, &node{a, cur.steps+1})
 			}
 		}
 	}
-	return solution.steps
+	return path
+}
+
+func cheatCount(inputFile string, cheatTime, minTimeSaved int) int {
+	start, end, map_ := readInput(inputFile)
+	path := bfs(start, end, map_)
+	count := 0
+	for i, p := range path {
+		for _, q := range path[i+1:] {
+			d := p.pos.distance(q.pos)
+			ts := q.steps - p.steps - d
+			if d <= cheatTime && ts >= minTimeSaved {
+				count += 1
+			}
+		}
+	}
+	return count
 }
 
 func part1() int {
-	map_, walls, start, end := readInput("input.txt")
-	baseTime := bfs(start, end, map_)
-	total := 0
-	for _, wall := range walls {
-		if !wall.isEdge(map_) && wall.isPassable(map_) {
-			map_[wall.y][wall.x] = "."
-			t := bfs(start, end, map_)
-			ts := baseTime - t
-			if ts >= 100 {
-				total += 1
-			}
-		}
-		map_[wall.y][wall.x] = "#"
-	}
-	return total
+	return cheatCount("input.txt", 2, 100)
+}
+
+func part2() int {
+	return cheatCount("input.txt", 20, 100)
 }
 
 func main() {
 	fmt.Println("Part 1:", part1())
+	fmt.Println("Part 2:", part2())
 }
