@@ -7,17 +7,20 @@ import (
 	"strings"
 )
 
-func readInput(inputFile string) [][2]string {
+func readInput(inputFile string) map[string][]string {
 	input, err := os.ReadFile(inputFile)
 	if err != nil {
 		panic(err)
 	}
 	lines := strings.Split(strings.TrimSpace(string(input)), "\n")
-	connections := [][2]string{}
+	graph := map[string][]string{}
 	for _, line := range lines {
-		connections = append(connections, [2]string(strings.Split(line, "-")))
+		split := strings.Split(line, "-")
+		a, b := split[0], split[1]
+		graph[a] = append(graph[a], b)
+		graph[b] = append(graph[b], a)
 	}
-	return connections
+	return graph
 }
 
 func areAdjacent(g map[string][]string, a, b string) bool {
@@ -28,23 +31,15 @@ func areAdjacent(g map[string][]string, a, b string) bool {
 }
 
 func part1() int {
-	connections := readInput("input.txt")
-	g := map[string][]string{}
-	for _, con := range connections {
-		a, b := con[0], con[1]
-		g[a] = append(g[a], b)
-	}
-	threes := []string{}
-	for    a := range g {
-	for _, b := range g[a] {
-	for _, c := range g[b] {
-		if areAdjacent(g, a, b) && areAdjacent(g, b, c) && areAdjacent(g, a, c) {
+	graph := readInput("input.txt")
+	threes := map[string]bool{}
+	for    a := range graph {
+	for _, b := range graph[a] {
+	for _, c := range graph[a] {
+		if areAdjacent(graph, b, c) && (a[0] == 't' || b[0] == 't' || c[0] == 't') {
 			t := []string{a, b, c}
 			slices.Sort(t)
-			st := fmt.Sprint(t)
-			if !slices.Contains(threes, st) && (a[0] == 't' || b[0] == 't' || c[0] == 't') {
-				threes = append(threes, st)
-			}
+			threes[fmt.Sprint(t)] = true
 		}
 	}}}
 	return len(threes)
