@@ -10,29 +10,23 @@ import (
 
 func readInput(inputFile string) (map[int][]int, [][]int) {
 	input, _ := os.ReadFile(inputFile)
-	lines := strings.Split(strings.TrimSpace(string(input)), "\n")
+	split := strings.Split(strings.TrimSpace(string(input)), "\n\n")
 	rules := map[int][]int{}
 	updates := [][]int{}
-	parseRules := true
-	for _, line := range lines {
-		if len(line) == 0 {
-			parseRules = false
-			continue
+	for _, rule := range strings.Split(split[0], "\n") {
+		s := strings.Split(rule, "|")
+		l, _ := strconv.Atoi(s[0])
+		r, _ := strconv.Atoi(s[1])
+		rules[r] = append(rules[r], l)
+	}
+	for _, update := range strings.Split(split[1], "\n") {
+		pages := strings.Split(update, ",")
+		intpages := []int{}
+		for _, s := range pages {
+			i, _ := strconv.Atoi(s)
+			intpages = append(intpages, i)
 		}
-		if parseRules {
-			s := strings.Split(line, "|")
-			l, _ := strconv.Atoi(s[0])
-			r, _ := strconv.Atoi(s[1])
-			rules[r] = append(rules[r], l)
-		} else {
-			pages := strings.Split(line, ",")
-			intpages := []int{}
-			for _, s := range pages {
-				i, _ := strconv.Atoi(s)
-				intpages = append(intpages, i)
-			}
-			updates = append(updates, intpages)
-		}
+		updates = append(updates, intpages)
 	}
 	return rules, updates
 }

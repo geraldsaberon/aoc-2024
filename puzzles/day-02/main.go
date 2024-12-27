@@ -8,54 +8,51 @@ import (
 	"math"
 )
 
-func readInput(inputFile string) []string {
+func readInput(inputFile string) [][]int {
 	input, _ := os.ReadFile(inputFile)
 	lines := strings.Split(strings.TrimSpace(string(input)), "\n")
-	return lines
+	reports := [][]int{}
+	for _, line := range lines {
+		report := []int{}
+		for _, level := range strings.Split(line, " ") {
+			intLevel, _ := strconv.Atoi(level)
+			report = append(report, intLevel)
+		}
+		reports = append(reports, report)
+	}
+	return reports
 }
 
-func isSafe(levels []string) bool {
-	prevLevel := 0
-	isIncreasing := 0
-	isDecreasing := 0
-
-	for _, v := range levels {
-		currentLevel, _ := strconv.Atoi(v)
-
-		if prevLevel == 0 {
-			prevLevel = currentLevel
-			continue
-		}
-
-		diff := currentLevel - prevLevel
-
-		if diff == 0 || math.Abs(float64(diff)) > 3 {
+func isSafe(levels []int) bool {
+	increments, decrements := 0, 0
+	for i := 1; i < len(levels); i++ {
+		diff := levels[i] - levels[i-1]
+		if math.Abs(float64(diff)) > 3 || diff == 0 {
 			return false
 		}
-
-		if diff > 0 { isIncreasing += 1 }
-		if diff < 0 { isDecreasing += 1 }
-
-		if isIncreasing > 0 && isDecreasing > 0 {
+		if diff > 0 {
+			increments += 1
+		} else {
+			decrements += 1
+		}
+		if increments > 0 && decrements > 0 {
 			return false
 		}
-
-		prevLevel = currentLevel
 	}
-
 	return true
 }
 
-func remove(slice []string, i int) []string {
-    return append(slice[:i], slice[i+1:]...)
+func remove(s []int, i int) []int {
+	c := make([]int, len(s))
+	copy(c, s)
+    return append(c[:i], c[i+1:]...)
 }
 
 func part1() int {
-	lines := readInput("input.txt")
+	reports := readInput("input.txt")
 	isSafeSum := 0
-	for _, line := range lines {
-		levels := strings.Split(line, " ")
-		if isSafe(levels) {
+	for _, report := range reports {
+		if isSafe(report) {
 			isSafeSum += 1
 		}
 	}
@@ -63,17 +60,12 @@ func part1() int {
 }
 
 func part2() int {
-	lines := readInput("input.txt")
+	reports := readInput("input.txt")
 	isSafeSum := 0
-	for _, line := range lines {
-		levels := strings.Split(line, " ")
-		safe := isSafe(levels)
-		for i, max := 0, len(levels); !safe && i < max; {
-			levels = remove(strings.Split(line, " "), i)
-			safe = isSafe(levels)
-			if !safe {
-				i += 1
-			}
+	for _, report := range reports {
+		safe := isSafe(report)
+		for i := 0; !safe && i < len(report); i++ {
+			safe = isSafe(remove(report, i))
 		}
 		if safe {
 			isSafeSum += 1
